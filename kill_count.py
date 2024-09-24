@@ -36,6 +36,9 @@ class TimerApp:
         self.end_time = None
         self.send_key_on_reset = ctk.BooleanVar(value=False)  # Checkbox variable
 
+        self.key_thread = None  # Переменная для управления потоком
+        self.key_thread_running = False  # Флаг для управления потоком
+
         self.create_widgets()
         self.setup_hotkeys()
 
@@ -215,20 +218,33 @@ class TimerApp:
             CTkMessagebox(title="Ошибка", message="Ошибка: введено не целое число.")
 
     def start(self):
-        pass
+        if not self.key_thread_running and self.hwnd:
+            self.key_thread_running = True
+            self.key_thread = threading.Thread(target=self.send_key_loop)
+            self.key_thread.start()
+            self.log("Нажатие клавиши '1' запущено")
 
     def start_hot_key(self):
-        pass
+        if self.hwnd:
+            self.start()
 
     def stop(self):
-        pass
+        if self.key_thread_running:
+            self.key_thread_running = False
+            self.key_thread.join()  # Дождитесь завершения потока
+            self.log("Нажатие клавиши '1' остановлено")
+
+    def send_key_loop(self):
+        while self.key_thread_running:
+            self.send_key_1()
+            time.sleep(0.1)  # Задержка между нажатиями
 
     def log(self, message):
         self.console.insert(ctk.END, message + "\n")
         self.console.see(ctk.END)
 
     def send_key_1(self):
-        print('Use j')
+        print('Use key - 1')
         try:
             win32api.PostMessage(self.hwnd, win32con.WM_KEYDOWN, int(VK_CODE['1']), 0)
             win32api.PostMessage(self.hwnd, win32con.WM_KEYUP, int(VK_CODE['1']), 0)
